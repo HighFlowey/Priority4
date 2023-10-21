@@ -1,6 +1,10 @@
 {
-    "name": "simplehitbox",
+    "name": "priority4",
     "tree": {
-        "$path": "src"
+        "$path": "src",
+        "Packages": {
+            "$className": "Folder",
+            "$path": "Packages"
+        }
     }
 }
