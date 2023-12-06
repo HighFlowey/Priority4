@@ -1,5 +1,5 @@
 local RunService = game:GetService("RunService")
-local BridgeNet2 = require(script:WaitForChild("Packages"):WaitForChild("BridgeNet2"))
+local BridgeNet2 = require(script.Parent:WaitForChild("BridgeNet2"))
 
 -- Proxcies
 local machineProxy = {
@@ -9,10 +9,10 @@ local machineProxy = {
 }
 
 local stateProxy = {
-	Priority = {Readonly = false, Value = 0},
-	Enabled = {Readonly = false, Value = false},
-	Active = {Readonly = true, Value = false},
-	Changed = {Readonly = true, Value = "Instance"},
+	Priority = { Readonly = false, Value = 0 },
+	Enabled = { Readonly = false, Value = false },
+	Active = { Readonly = true, Value = false },
+	Changed = { Readonly = true, Value = "Instance" },
 }
 
 -- Variables
@@ -37,13 +37,13 @@ end
 function module.CreateMachine(object: Instance): StateMachine
 	local machineProxy = deepCopy(machineProxy)
 	local meta = {}
-	
+
 	assert(object, "First argument for CreateMachine is nil.")
-	
+
 	if RunService:IsClient() then
-		bridge:Fire({"get", object})
+		bridge:Fire({ "get", object })
 	end
-	
+
 	machineProxy["CreateState.Hidden"] = function(i)
 		local stateProxy = deepCopy(stateProxy)
 		local meta = {}
@@ -82,26 +82,26 @@ function module.CreateMachine(object: Instance): StateMachine
 		rawset(state, "Proxy.Hidden", stateProxy)
 		stateProxy.Changed.Value = stateProxy["Changed.Hidden"].Event
 
-		machineProxy[i] = {Type = "State", Value = state}
-		
+		machineProxy[i] = { Type = "State", Value = state }
+
 		return machineProxy[i]
 	end
-	
+
 	machineProxy["Update.Hidden"] = function()
 		local enabledClasses = {}
 
 		for i, state in machineProxy do
 			if typeof(state) == "table" and state.Type == "State" then
 				if state.Value.Enabled then
-					table.insert(enabledClasses, {i, state.Value.Priority})
+					table.insert(enabledClasses, { i, state.Value.Priority })
 				end
 			end
 		end
 
-		table.sort(enabledClasses, function(a,b)
+		table.sort(enabledClasses, function(a, b)
 			return a[2] > b[2]
 		end)
-		
+
 		for i, state in machineProxy do
 			if typeof(state) == "table" and state.Type == "State" then
 				if #enabledClasses > 0 and enabledClasses[1][1] == i then
@@ -116,14 +116,14 @@ function module.CreateMachine(object: Instance): StateMachine
 			end
 		end
 	end
-	
+
 	meta.__index = function(t, i)
 		if i == "meta" then
 			return machineProxy
 		end
-		
+
 		local exists = machineProxy[i] -- check if indexed item exists
-		
+
 		if exists then
 			if exists.Type == "State" then
 				-- Return State
@@ -134,50 +134,50 @@ function module.CreateMachine(object: Instance): StateMachine
 			return machineProxy["CreateState.Hidden"](i).Value
 		end
 	end
-	
+
 	meta.__newindex = function(t, i, v)
 		local exists = machineProxy[i] -- check if indexed item exists
-		
+
 		if not exists then
 			-- Create State
 			exists = machineProxy["CreateState.Hidden"](i)
 		end
-		
+
 		if exists and exists.Type == "State" then
 			-- Change State Proprty
-			
+
 			if typeof(v) == "boolean" and exists.Value.Enabled ~= v then
 				exists.Value.Enabled = v
 			elseif typeof(v) == "number" and exists.Value.Priority ~= v then
 				exists.Value.Priority = v
 			end
-			
+
 			if RunService:IsServer() then
-				for player: Player, objects: {Instance} in module.replicating do
+				for player: Player, objects: { Instance } in module.replicating do
 					if table.find(objects, object) then
-						bridge:Fire(player, {"set", object, i, v})
+						bridge:Fire(player, { "set", object, i, v })
 					end
 				end
 			end
 		end
 	end
-	
+
 	meta.__tostring = function(t)
 		local str = ""
-		
+
 		for i, v in machineProxy do
 			if typeof(v) == "table" and v.Type == "State" then
 				str = str .. i .. ":" .. tostring(v.Value) .. " "
 			end
 		end
-		
+
 		return str
 	end
-	
+
 	local machine = setmetatable({}, meta)
-	
+
 	module.memory[object] = machine
-	
+
 	return machine
 end
 
@@ -188,11 +188,11 @@ end
 if RunService:IsClient() then
 	bridge:Connect(function(content)
 		local action = content[1]
-		
+
 		if action == "set" then
 			local object, i, v = table.unpack(content, 2)
 			local machine = module.GetMachine(object)
-			
+
 			if machine then
 				machine[i] = v
 			end
@@ -201,21 +201,21 @@ if RunService:IsClient() then
 elseif RunService:IsServer() then
 	bridge:Connect(function(player, content)
 		local action = content[1]
-		
+
 		if action == "get" then
 			local object = table.unpack(content, 2)
 			local machine = module.GetMachine(object)
-			
+
 			if module.replicating[player] == nil then
 				module.replicating[player] = {}
 			end
-			
+
 			table.insert(module.replicating[player], object)
-			
+
 			for c, b in machine.meta do
 				if typeof(b) == "table" and b.Type == "State" then
-					bridge:Fire(player, {"set", object, c, b.Value.Enabled})
-					bridge:Fire(player, {"set", object, c, b.Value.Priority})
+					bridge:Fire(player, { "set", object, c, b.Value.Enabled })
+					bridge:Fire(player, { "set", object, c, b.Value.Priority })
 				end
 			end
 		end
