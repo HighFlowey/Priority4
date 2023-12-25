@@ -3,6 +3,7 @@ name = "highflowey/priority4"
 version = "4.0.3"
 registry = "https://github.com/UpliftGames/wally-index"
 realm = "shared"
+description = "Priority4 is outdated, get latest version from https://wally.run/package/highflowey/priority"
 
 [dependencies]
 BridgeNet2 = "ffrostflame/bridgenet2@1.0.0"
